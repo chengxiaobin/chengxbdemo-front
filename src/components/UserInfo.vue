@@ -5,6 +5,7 @@
         position: relative;
         border-radius: 4px;
         overflow: hidden;
+		height: 900px;
     }
     .layout-header-bar{
         background: #fff;
@@ -21,7 +22,7 @@
                         Item 1
                     </template>
                     <menu-item name="1-1" @click="toNewsPage()">Option 1</menu-item>
-                    <menu-item name="1-2">Option 2</menu-item>
+                    <menu-item name="1-2" @on-select="loaduserinfo()">Option 2</menu-item>
                     <menu-item name="1-3">Option 3</menu-item>
                 </Submenu>
                 <Submenu name="2">
@@ -52,86 +53,53 @@
                 </Breadcrumb>
                 <Card>
 					<div style="height: 600px">
-						<h1>{{ msg }}</h1>
-						<h2>Essential Links</h2>
-						<ul>
-						  <li>
-							<a
-							  href="https://vuejs.org"
-							  target="_blank"
-							>
-							  Core Docs
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="https://forum.vuejs.org"
-							  target="_blank"
-							>
-							  Forum
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="https://chat.vuejs.org"
-							  target="_blank"
-							>
-							  Community Chat
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="https://twitter.com/vuejs"
-							  target="_blank"
-							>
-							  Twitter
-							</a>
-						  </li>
-						  <br>
-						  <li>
-							<a
-							  href="http://vuejs-templates.github.io/webpack/"
-							  target="_blank"
-							>
-							  Docs for This Template
-							</a>
-						  </li>
-						</ul>
-						<h2>Ecosystem</h2>
-						<ul>
-						  <li>
-							<a
-							  href="http://router.vuejs.org/"
-							  target="_blank"
-							>
-							  vue-router
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="http://vuex.vuejs.org/"
-							  target="_blank"
-							>
-							  vuex
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="http://vue-loader.vuejs.org/"
-							  target="_blank"
-							>
-							  vue-loader
-							</a>
-						  </li>
-						  <li>
-							<a
-							  href="https://github.com/vuejs/awesome-vue"
-							  target="_blank"
-							>
-							  awesome-vue
-							</a>
-						  </li>
-						</ul>
+						<h1>用户基本信息表</h1>
+						<div style="text-align: left">
+							<Button type="primary" size="small" style="margin-left: 5px; margin: left" @click="loaduserinfo">开始</Button>
+							<Button type="primary" size="small" style="margin-left: 5px; margin: left" @click="modal7 = true">创建用户</Button></div>
+						<Modal
+        							v-model="modal7"
+        							title="Title"
+        							@on-ok="insertOK()">
+        							<div>
+										<p>Id</p>
+										<Input v-model="inputId" type="textarea" :autosize="true" placeholder="Enter Id..." />
+										<p>Name</p>
+										<Input v-model="inputName" type="textarea" :autosize="true" placeholder="Enter Name..." />
+										<p>Password</p>
+										<Input v-model="inputPassword" type="textarea" :autosize="true" placeholder="Enter Password..." />
+										<p>Role</p>
+										<Input v-model="inputRole" type="textarea" :autosize="true" placeholder="Enter Role..." />
+
+									</div>
+    							</Modal>
+						<br>
+						<Table border :columns="columns12" :data="userinfo">
+       						<template slot-scope="{ row }" slot="id">   
+            					<strong>{{ row.id }}</strong>
+        					</template>
+        					<template slot-scope="{ row, index }" slot="action">
+            					<Button type="primary" size="small" style="margin-left: 5px" @click="modal6 = true">Update</Button>
+								<Modal
+        							v-model="modal6"
+        							title="Title"
+        							@on-ok="asyncOK(index)">
+        							<div>
+										<p>Name</p>
+										<Input v-model="inputName" type="textarea" :autosize="true" placeholder="Enter Name..." />
+										<p>Password</p>
+										<Input v-model="inputPassword" type="textarea" :autosize="true" placeholder="Enter Password..." />
+										<p>Role</p>
+										<Input v-model="inputRole" type="textarea" :autosize="true" placeholder="Enter Role..." />
+
+									</div>
+    							</Modal>
+            					<Button type="error" size="small" @click="remove(index)">Delete</Button>
+        					</template>
+							
+    					</Table>
+						<Page :total="totalCount" :current="pageNum" :page-sizes="pageSize" :page-size-opts="pageSizeOpts" show-elevator show-sizer @on-change="pageNumChange" @on-page-size-change="pageSizeChange"/>
+						{{totalCount}}<br>{{pageNum}}<br>{{pageSize}}
 					</div>
                 </Card>
             </Content>
@@ -140,27 +108,138 @@
 </template>
 
 <script>
-export default {
-  name: 'UserInfo',
+import axios from 'axios'
+import qs from "qs"
+export default {	
+  name: 'HelloWorld',
   data () {
     return {
-      userinfo:[],  
+	  userinfo:[],
+	  id:'',
+	  modal6: false,
+	  modal7: false,
+	  totalCount: 1000,
+	  inputId: '',
+	  inputName: '',
+	  inputPassword: '',
+	  inputRole: '',
+	  
+	  pageSize:10,
+	  pageSizeOpts: [10,30,50,70,90],
+	  pageNum:1,
+	  //index:1,
+
+	  columns12: [
+                    {
+						title: 'Id',
+						align: 'center',
+                        slot: 'id'
+                    },
+                    {
+						title: 'Name',
+						align: 'center',
+                        key: 'name'
+                    },
+                    {
+						title: 'Password',
+						align: 'center',
+                        key: 'password'
+					},
+					{
+						title: 'Role',
+						align: 'center',
+                        key: 'role'
+					},
+                    {
+                        title: 'Action',
+                        slot: 'action',
+                        width: 240,
+                        align: 'center'
+                    }
+                ],
       msg: 'Welcome to Your Vue.js App'
     }
   },
     　　methods: {
     　　　　toNewsPage() {
         　　this.$router.push({path: 'test'})
-    　　　　},
-            loaduserinfo () {
-                var _this = this
-                this.$axios.get('/userinfo/test').then(resp => {
+	　　　　},
+			loaduserinfo () {
+				var _this = this
+				var param = {"pageSize":this.pageSize,"pageNum":this.pageNum}
+                this.$axios.get('/test',{params:param}).then(resp => {
                 if (resp && resp.status === 200) {
-                    _this.userinfo = resp.data
-          }
-        })
-      },
-    　　}
+					_this.userinfo = resp.data.data.result.list
+					_this.totalCount = resp.data.data.result.total
+					console.log(resp.data.data.result)
+          			}
+        		})
+			  },
+			  
+			  pageSizeChange (i){
+				this.pageSize=i
+				this.loaduserinfo()
+				console.log("hit 2ps")
+				console.log(this.pageNum+" "+this.pageSize)
+			  },
+
+			  pageNumChange (j)
+			  {
+				this.pageNum=j
+				this.loaduserinfo()
+				console.log("hit 2pn")
+				console.log(this.pageNum+" "+this.pageSize)
+			  },
+	  		remove (index){
+				var _this = this
+				var id = this.userinfo[index].id
+				var param = {"id":id}
+				console.log("hit 1"+id)
+			
+                this.$axios.delete('/delete',{params:param}).then(resp => {
+                if (resp && resp.status === 200) {
+					console.log("hit 2")
+					this.loaduserinfo()
+          			}
+				})
+
+				console.log("hit 3")
+			  },
+			  update (){
+				 modal6 = true
+
+			  },
+			  asyncOK (index) {
+				var _this = this
+				var id = this.userinfo[index].id  
+				var param = qs.stringify({"id":id,"name":this.inputName,"password":this.inputPassword,"role":this.inputRole})
+				console.log(param)
+				this.$axios.put('/update',param).then(resp => {
+                if (resp && resp.status === 200) {
+					console.log("hit 2")
+					this.loaduserinfo()
+          			}
+				})
+				console.log("hit 3")
+			   },
+			  insert (){
+				 modal7 = true
+
+			  },
+			  insertOK () {
+				var _this = this
+				
+				var param = qs.stringify({"id":this.inputId,"name":this.inputName,"password":this.inputPassword,"role":this.inputRole})
+				console.log(param)
+				this.$axios.post('/insert',param).then(resp => {
+                if (resp && resp.status === 200) {
+					console.log("hit 2")
+					this.loaduserinfo()
+          			}
+				})
+				console.log("hit 3")
+            }
+    }
 }
 </script>
 
